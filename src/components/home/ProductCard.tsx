@@ -1,5 +1,7 @@
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { useCartStore } from "../../store/cartStore";
+
 
 type Product = {
   id: number;
@@ -19,9 +21,22 @@ type ProductCardProps = {
 
 const ProductCard = ({ product, liked, onToggleLike }: ProductCardProps) => {
   const navigate = useNavigate();
+  const addItem = useCartStore((s) => s.addItem);
+
 
   const goToDetail = () => {
     navigate(`/product/${product.id}`);
+    };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      oldPrice: product.oldPrice,
+      image: product.image,
+    });
   };
 
   return (
@@ -67,7 +82,7 @@ const ProductCard = ({ product, liked, onToggleLike }: ProductCardProps) => {
 
         <button
           onClick={(e) => {
-            e.stopPropagation();
+            handleAddToCart(e);
             goToDetail();
           }}
           className="mt-2 w-full bg-[#B83232] text-white text-xs font-semibold py-1.5 rounded-lg hover:bg-red-900 transition-colors"
