@@ -1,10 +1,8 @@
-import React from "react";
-
 const Header = () => {
+  
   return (
     <>
-      <div className="min-h-screen bg-[#FFF8F0] overflow-x-hidden">
-        <div className="relative bg-[#B83232] overflow-hidden">
+      <div className="relative bg-[#B83232] overflow-hidden">
           <svg
             viewBox="0 0 800 180"
             className="absolute inset-0 w-full h-full"
@@ -23,7 +21,6 @@ const Header = () => {
               </h1>
             </div>
           </div>
-        </div>
       </div>
     </>
   );
