@@ -1,4 +1,4 @@
-import { PiCake, PiCakeLight } from "react-icons/pi";
+import { PiCake } from "react-icons/pi";
 import { useCartStore } from "../../store/cartStore";
 
 const CURRENCY = "$";
