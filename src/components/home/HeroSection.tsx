@@ -131,7 +131,7 @@ const HeroSection = () => {
           </div>
 
           <div className="hidden md:flex flex-col gap-4 shrink-0">
-            <div className="w-16 h-16 rounded-2xl bg-white/10 overflow-hidden border-3 border-white/20 shadow-xl">
+            <div className="w-28 h-28 rounded-2xl bg-white/10 overflow-hidden border-3 border-white/20 shadow-xl">
               <img
                 src={macaron}
                 alt="Macaron"
