@@ -44,10 +44,13 @@ const OrderItems = ({
 
             <div className="flex items-center bg-white rounded-full shadow-sm overflow-hidden border border-red-100">
               <button
-                onClick={() =>
-                  updateQuantity(item.id, item.quantity - 1)
-                }
-                className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-[#B83232] hover:text-white transition-colors font-bold"
+                disabled={item.quantity === 1}
+                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                className={`w-8 h-8 flex items-center justify-center font-bold transition-colors ${
+                  item.quantity === 1
+                    ? "text-gray-300 cursor-not-allowed"
+                    : "text-gray-500 hover:bg-[#B83232] hover:text-white"
+                }`}
               >
                 −
               </button>
@@ -57,9 +60,7 @@ const OrderItems = ({
               </span>
 
               <button
-                onClick={() =>
-                  updateQuantity(item.id, item.quantity + 1)
-                }
+                onClick={() => updateQuantity(item.id, item.quantity + 1)}
                 className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-[#B83232] hover:text-white transition-colors font-bold"
               >
                 +

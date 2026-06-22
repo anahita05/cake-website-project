@@ -35,7 +35,7 @@ export const useCartStore = create<CartStore>()(
           if (existing) {
             return {
               items: state.items.map((i) =>
-                i.id === newItem.id ? { ...i, quantity: i.quantity + 1 } : i
+                i.id === newItem.id ? { ...i, quantity: i.quantity + 1 } : i,
               ),
             };
           }
@@ -48,30 +48,25 @@ export const useCartStore = create<CartStore>()(
       },
 
       updateQuantity: (id, quantity) => {
-        if (quantity < 1) {
-          get().removeItem(id);
-          return;
-        }
+        if (quantity < 1) return;
+
         set((state) => ({
-          items: state.items.map((i) =>
-            i.id === id ? { ...i, quantity } : i
-          ),
+          items: state.items.map((i) => (i.id === id ? { ...i, quantity } : i)),
         }));
       },
 
       clearCart: () => set({ items: [] }),
 
-      getTotalItems: () =>
-        get().items.reduce((sum, i) => sum + i.quantity, 0),
+      getTotalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 
       getTotalPrice: () =>
         get().items.reduce(
           (sum, i) => sum + parsePrice(i.price) * i.quantity,
-          0
+          0,
         ),
     }),
     {
       name: "cake-shop-cart",
-    }
-  )
+    },
+  ),
 );
