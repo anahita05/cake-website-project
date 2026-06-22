@@ -10,6 +10,8 @@ const OrderItems = ({
   updateQuantity: (id: number, quantity: number) => void;
   removeItem: (id: number) => void;
 }) => {
+  const parsePrice = (price: string) =>
+    parseFloat(price.replace(/[^0-9.]/g, "")) || 0;
   return (
     <div className="bg-white rounded-3xl shadow-md p-6">
       <h2 className="font-serif font-bold text-[#B83232] text-xl mb-5">
@@ -65,6 +67,11 @@ const OrderItems = ({
               >
                 +
               </button>
+            </div>
+            <div className="w-12 text-right">
+              <p className="font-bold text-black">
+                ${(parsePrice(item.price) * item.quantity).toFixed(0)}
+              </p>
             </div>
 
             <button
