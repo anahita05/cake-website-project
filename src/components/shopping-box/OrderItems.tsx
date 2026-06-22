@@ -1,5 +1,6 @@
 import { FaTrash } from "react-icons/fa";
 import type { CartItem } from "../../store/cartStore";
+import { TiShoppingCart } from "react-icons/ti";
 
 const OrderItems = ({
   items,
@@ -12,6 +13,22 @@ const OrderItems = ({
 }) => {
   const parsePrice = (price: string) =>
     parseFloat(price.replace(/[^0-9.]/g, "")) || 0;
+
+  if (items.length === 0) {
+    return (
+      <div className="bg-white rounded-3xl shadow-md p-6">
+        <h2 className="font-serif font-bold text-[#B83232] text-xl mb-5">
+          Order Items
+        </h2>
+
+        <div className="flex items-center justify-center min-h-62.5 text-[#706336]">
+          Your cart is empty ... 
+          <TiShoppingCart
+            className="w-5 h-5" />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="bg-white rounded-3xl shadow-md p-6">
       <h2 className="font-serif font-bold text-[#B83232] text-xl mb-5">
