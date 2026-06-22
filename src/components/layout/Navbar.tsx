@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { IoSearch } from "react-icons/io5";
 import { FiMenu, FiUser } from "react-icons/fi";
 import { IoBagHandleOutline } from "react-icons/io5";
 import MobileMenu from "./MobileMenu";
 import SearchOverlay from "./SearchOverlay";
+import { useCartStore } from "../../store/cartStore";
+
 
 const navLinks = [
   "Cakes",
@@ -17,6 +20,8 @@ const navLinks = [
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const navigate = useNavigate();
+  const totalItems = useCartStore((s) => s.getTotalItems());
 
   return (
     <>
@@ -26,6 +31,7 @@ export default function Navbar() {
 
             <a
               className="text-2xl font-black tracking-tight text-red-700 shrink-0 cursor-pointer font-serif"
+              onClick={() => navigate("/")}
             >
               CAKE SHOP
             </a>
@@ -65,11 +71,13 @@ export default function Navbar() {
               >
                 <IoBagHandleOutline className="w-6 h-6" />
                 <span className="absolute top-1 right-0 flex items-center justify-center w-4 h-4 rounded-full bg-[#B83232] text-white text-[10px] font-bold">
-                  0
+                  {totalItems > 99 ? "99+" : totalItems}
                 </span>
               </div>
 
-              <a className="hidden lg:block bg-[#B83232] hover:bg-red-900 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors shadow-md cursor-pointer whitespace-nowrap">
+              <a className="hidden lg:block bg-[#B83232] hover:bg-red-900 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors shadow-md cursor-pointer whitespace-nowrap"
+                onClick={() => navigate("/cart")}
+                >
                 ORDER NOW
               </a>
 

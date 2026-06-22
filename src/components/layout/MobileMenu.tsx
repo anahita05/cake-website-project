@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { IoClose } from "react-icons/io5";
 import { FiUser } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 const navLinks = [
   "Cakes",
@@ -31,6 +32,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, [onClose]);
+
+    const navigate = useNavigate();
 
   return (
     <>
@@ -85,7 +88,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             <FiUser className="w-4 h-4 text-red-700" />
             Login / Signup
           </button>
-          <a className="flex items-center justify-center w-full py-3 rounded-full bg-[#B83232] hover:bg-red-900 text-white font-bold text-sm shadow-md transition-colors cursor-pointer">
+          <a className="flex items-center justify-center w-full py-3 rounded-full bg-[#B83232] hover:bg-red-900 text-white font-bold text-sm shadow-md transition-colors cursor-pointer"
+            onClick={() => navigate("/cart")}>
             ORDER NOW
           </a>
         </div>
