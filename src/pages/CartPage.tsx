@@ -1,3 +1,4 @@
+import DeliveryDetails from "../components/shopping-box/DeliveryDetails";
 import Header from "../components/shopping-box/Header";
 import OrderItems from "../components/shopping-box/OrderItems";
 import OrderSummary from "../components/shopping-box/OrderSummary";
@@ -28,8 +29,8 @@ const CartPage = () => {
             updateQuantity={updateQuantity}
             removeItem={removeItem}
           />
+          <DeliveryDetails />
         </div>
-
         <OrderSummary />
       </div>
     </>
