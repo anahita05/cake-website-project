@@ -22,7 +22,7 @@ const OrderItems = ({
         {items.map((item) => (
           <div
             key={item.id}
-            className="flex items-center gap-4 p-4 bg-[#FFF8F0] rounded-2xl"
+            className="flex flex-col md:flex-row gap-4 p-4 bg-[#FFF8F0] rounded-2xl"
           >
             <div className="w-16 h-16 rounded-xl overflow-hidden bg-[#FFE3D4] shrink-0">
               <img
@@ -43,43 +43,44 @@ const OrderItems = ({
                 </span>
               </p>
             </div>
+            <div className="flex items-center justify-between md:justify-start gap-3 w-full md:w-auto">
+              <div className="flex items-center bg-white rounded-full shadow-sm overflow-hidden border border-red-100">
+                <button
+                  disabled={item.quantity === 1}
+                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                  className={`w-8 h-8 flex items-center justify-center font-bold transition-colors ${
+                    item.quantity === 1
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "text-gray-500 hover:bg-[#B83232] hover:text-white"
+                  }`}
+                >
+                  −
+                </button>
 
-            <div className="flex items-center bg-white rounded-full shadow-sm overflow-hidden border border-red-100">
+                <span className="w-8 text-center font-bold text-gray-700 text-sm">
+                  {item.quantity}
+                </span>
+
+                <button
+                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                  className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-[#B83232] hover:text-white transition-colors font-bold"
+                >
+                  +
+                </button>
+              </div>
+              <div className="w-12 text-right">
+                <p className="font-bold text-black">
+                  ${(parsePrice(item.price) * item.quantity).toFixed(0)}
+                </p>
+              </div>
+
               <button
-                disabled={item.quantity === 1}
-                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                className={`w-8 h-8 flex items-center justify-center font-bold transition-colors ${
-                  item.quantity === 1
-                    ? "text-gray-300 cursor-not-allowed"
-                    : "text-gray-500 hover:bg-[#B83232] hover:text-white"
-                }`}
+                onClick={() => removeItem(item.id)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-[#B83232] transition-colors shrink-0"
               >
-                −
-              </button>
-
-              <span className="w-8 text-center font-bold text-gray-700 text-sm">
-                {item.quantity}
-              </span>
-
-              <button
-                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-[#B83232] hover:text-white transition-colors font-bold"
-              >
-                +
+                <FaTrash className="text-xs" />
               </button>
             </div>
-            <div className="w-12 text-right">
-              <p className="font-bold text-black">
-                ${(parsePrice(item.price) * item.quantity).toFixed(0)}
-              </p>
-            </div>
-
-            <button
-              onClick={() => removeItem(item.id)}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-[#B83232] transition-colors shrink-0"
-            >
-              <FaTrash className="text-xs" />
-            </button>
           </div>
         ))}
       </div>
