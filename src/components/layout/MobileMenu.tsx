@@ -37,7 +37,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       {/* backdrop */}
       <div
         onClick={onClose}
-        className={`fixed inset-0 z-60 bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 md:hidden ${
+        className={`fixed inset-0 z-60 bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 lg:hidden ${
           isOpen
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -45,7 +45,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       />
 
       <div
-        className={`fixed top-0 right-0 h-full w-[80%] max-w-sm z-70 flex flex-col transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed top-0 right-0 h-full w-[80%] max-w-sm z-70 flex flex-col transition-transform duration-300 ease-in-out lg:hidden ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         style={{ background: "#fdf6ee" }}
