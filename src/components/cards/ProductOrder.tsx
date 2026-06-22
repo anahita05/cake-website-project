@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FaShoppingCart, FaCheck } from "react-icons/fa";
 import type { ProductTypes } from "../../types/ProductTypes";
+import { useCartStore } from "../../store/cartStore";
 
 interface ProductOrderProps {
   product: ProductTypes;
@@ -34,14 +35,21 @@ const SignatureAnimation = () => (
 const ProductOrder = ({ product }: ProductOrderProps) => {
   const [quantity, setQuantity] = useState(1);
   const [signed, setSigned] = useState(false);
+  const addItem = useCartStore((s) => s.addItem);
 
-const handleAddToCart = () => {
-  setSigned(true);
-
-  setTimeout(() => {
-    setSigned(false);
-  }, SIGNED_DURATION_MS);
-};
+  const handleAddToCart = () => {
+    for (let i = 0; i < quantity; i++) {
+      addItem({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        oldPrice: product.oldPrice,
+        image: product.image,
+      });
+    }
+    setSigned(true);
+    setTimeout(() => setSigned(false), SIGNED_DURATION_MS);
+  };
 
   const decrement = () => setQuantity((q) => Math.max(1, q - 1));
   const increment = () => setQuantity((q) => q + 1);
@@ -90,9 +98,7 @@ const handleAddToCart = () => {
             >
               −
             </button>
-            <span
-              className="w-14 text-center font-bold text-gray-800 text-lg"
-            >
+            <span className="w-14 text-center font-bold text-gray-800 text-lg">
               {quantity}
             </span>
             <button
@@ -114,7 +120,7 @@ const handleAddToCart = () => {
                 signed ? "opacity-0" : "opacity-100"
               }`}
             >
-              <FaShoppingCart className="text-lg"/>
+              <FaShoppingCart className="text-lg" />
               Add to Cart
             </span>
 

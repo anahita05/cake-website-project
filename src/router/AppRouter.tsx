@@ -3,6 +3,7 @@ import type { RouteObject } from "react-router";
 import RootLayout from "../layouts/RootLayout";
 import Home from "../pages/HomePage";
 import ProductDetail from "../pages/ProductDetail";
+import CartPage from "../pages/CartPage";
 
 const routes: RouteObject[] = [
   {
@@ -12,7 +13,7 @@ const routes: RouteObject[] = [
       { index: true, element: <Home /> },
       { path: "home", element: <Home /> },
       { path: "product/:id", element: <ProductDetail /> },
-      // { path: "profile/:username", element: <Profile /> },
+      { path: "cart", element: <CartPage /> },
     ],
   },
 
