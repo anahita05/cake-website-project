@@ -4,6 +4,7 @@ import RootLayout from "../layouts/RootLayout";
 import Home from "../pages/HomePage";
 import ProductDetail from "../pages/ProductDetail";
 import CartPage from "../pages/CartPage";
+import ComingSoon from "../pages/ComingSoon";
 
 const routes: RouteObject[] = [
   {
@@ -14,12 +15,15 @@ const routes: RouteObject[] = [
       { path: "home", element: <Home /> },
       { path: "product/:id", element: <ProductDetail /> },
       { path: "cart", element: <CartPage /> },
+      { path: "login", element: <ComingSoon /> },
+      { path: "cakes", element: <ComingSoon /> },
+      { path: "theme-cakes", element: <ComingSoon /> },
+      { path: "desserts", element: <ComingSoon /> },
+
+
+      { path: "*", element: <ComingSoon /> },
     ],
   },
-
-  // { path: "/login", element: <LoginPage /> },
-  // { path: "/register", element: <RegisterPage /> },
-  // { path: "*", element: <NotFoundPage /> },
 ];
 
 const router = createBrowserRouter(routes);
