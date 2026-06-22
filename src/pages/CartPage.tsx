@@ -1,5 +1,6 @@
 import Header from "../components/shopping-box/Header";
 import OrderItems from "../components/shopping-box/OrderItems";
+import OrderSummary from "../components/shopping-box/OrderSummary";
 import { useCartStore } from "../store/cartStore";
 
 export interface CartItem {
@@ -29,7 +30,7 @@ const CartPage = () => {
           />
         </div>
 
-        <div>Order Summary</div>
+        <OrderSummary />
       </div>
     </>
   );
