@@ -41,7 +41,7 @@ interface AuthCardProps {
 }
 
 const AuthCard: React.FC<AuthCardProps> = ({ children, title, subtitle, panelProps }) => (
-  <div className="h-screen bg-neutral-50 flex items-center justify-center p-4">
+  <div className="h-screen #f1ebe4 flex items-center justify-center p-4">
     <div className="w-full max-w-3xl grid lg:grid-cols-[240px_1fr] rounded-2xl overflow-hidden shadow-xl shadow-black/10">
       <BrandPanel {...panelProps} />
 
