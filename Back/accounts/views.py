@@ -9,7 +9,7 @@ from django.contrib.auth import authenticate
 from django.conf import settings
 from drf_spectacular.utils import extend_schema
 from .services import user_create
-from .serializers import UserRegisterInputSerializer, UserOutputSerializer
+from .serializers import LoginInputSerializer, UserRegisterInputSerializer, UserOutputSerializer
 
 
 # =============================================================================
@@ -69,6 +69,7 @@ class LoginView(APIView):
         summary="User Login",
         description="Authenticate with email and password. Sets JWT tokens as HttpOnly cookies.",
         tags=["Authentication"],
+        request=LoginInputSerializer,
         responses={200: UserOutputSerializer},
     )
     def post(self, request: Request) -> Response:

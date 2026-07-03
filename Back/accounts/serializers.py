@@ -13,6 +13,12 @@ class UserRegisterInputSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8, style={'input_type': 'password'})
 
+class LoginInputSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(
+        write_only=True,
+        style={'input_type': 'password'}
+    )
 
 # =============================================================================
 # Output Serializers

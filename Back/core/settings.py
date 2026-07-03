@@ -152,9 +152,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-    'DEFAULT_SCHEMA_CLASS': (
-        'drf_spectacular.openapi.AutoSchema',
-    ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 
@@ -185,3 +183,15 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True  # required for cookies to be sent cross-origin
+
+
+# =============================================================================
+# SPECTACULAR (API DOCUMENTATION)
+# =============================================================================
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Cake Shop API',
+    'DESCRIPTION': 'Backend API for the cake website',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
