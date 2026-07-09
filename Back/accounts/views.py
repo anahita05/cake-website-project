@@ -10,6 +10,7 @@ from django.conf import settings
 from drf_spectacular.utils import extend_schema
 from .services import user_create
 from .serializers import LoginInputSerializer, UserRegisterInputSerializer, UserOutputSerializer
+from cart.services import cart_get_or_create
 
 
 # =============================================================================
@@ -56,6 +57,10 @@ class RegisterView(APIView):
         serializer.is_valid(raise_exception=True)
         data = cast(dict[str, Any], serializer.validated_data)
         user = user_create(**data)
+        
+        # Create cart for the newly registered user
+        cart_get_or_create(user=user)
+        
         return Response(
             UserOutputSerializer(user).data,
             status=status.HTTP_201_CREATED
@@ -89,6 +94,9 @@ class LoginView(APIView):
                 {'error': 'Invalid credentials'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
+
+        # Create or get cart for the user
+        cart_get_or_create(user=user)
 
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)

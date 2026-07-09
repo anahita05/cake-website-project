@@ -6,6 +6,12 @@ from products.models import Product
 User = get_user_model()
 
 
+def cart_get_or_create(*, user: User) -> Cart:
+    """Get or create a cart for the user."""
+    cart, created = Cart.objects.get_or_create(user=user)
+    return cart
+
+
 def cart_add_item(*, user: User, product: Product, quantity: int = 1) -> CartItem:
     cart = cart_get(user=user)
     cart_item, created = CartItem.objects.get_or_create(

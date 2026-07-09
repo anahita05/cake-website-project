@@ -5,4 +5,6 @@ User = get_user_model()
 
 
 def cart_get(*, user : User) -> Cart:
-    return  Cart.objects.get(user=user)
+    """Get or create a cart for the user."""
+    cart, created = Cart.objects.get_or_create(user=user)
+    return cart
