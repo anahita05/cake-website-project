@@ -1,11 +1,11 @@
-import { useParams, Link } from "react-router";
-import { FaArrowLeft } from "react-icons/fa";
+import { useParams } from "react-router";
 import { products } from "../types/ProductTypes";
 import ProductHero from "../components/cards/ProductHero";
 import ProductAbout from "../components/cards/ProductAbout";
 import ProductGallery from "../components/cards/ProductGallery";
 import ProductOrder from "../components/cards/ProductOrder";
 import ProductReviews from "../components/cards/ProductReviews";
+import BackButton from "../components/BackButton";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,11 +17,7 @@ const ProductDetail = () => {
   return (
     <div className="min-h-screen bg-[#FFF8F0] overflow-x-hidden relative">
 
-      <Link
-        to="/"
-        className="fixed top-16 right-6 md:top-24 z-50 flex items-center gap-2 bg-[#B83232] text-white px-5 py-2.5 rounded-full shadow-lg hover:bg-[#922727] hover:scale-105 transition-all duration-300">
-        <FaArrowLeft />
-      </Link>
+      <BackButton />
 
       <ProductHero product={product} />
       <ProductAbout product={product} />

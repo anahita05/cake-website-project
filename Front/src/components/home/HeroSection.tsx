@@ -1,6 +1,7 @@
 import strawberry from "../../assets/HomeIcon/Strawberry-cake.jpg";
 import macaron from "../../assets/HomeIcon/macaron.jpg";
 import blueCake from "../../assets/HomeIcon/blueCake.jpg";
+import { Link } from "react-router-dom";
 
 const HeroSection = () => {
   return (
@@ -11,8 +12,7 @@ const HeroSection = () => {
       <div className="absolute top-5 left-9 w-87 h-87 bg-white/5 rounded-[40%_90%_30%_70%/60%_90%_70%_80%]" />
       <div className="absolute bottom-8 right-89 w-77 h-88 bg-white/5 rounded-[90%_40%_30%_70%/60%_30%_70%_40%]" />
       <div className="absolute bottom-8 right-22 w-22 h-22 bg-white/5 rounded-[60%_40%_30%_50%/60%_30%_70%_90%]" />
-      <div className="max-w-6xl mx-auto px-4 py-12 md:py-16 relative z-10"> 
-        
+      <div className="max-w-6xl mx-auto px-4 py-12 md:py-16 relative z-10">
         {/* Mobile Layout */}
         <div className="flex md:hidden flex-col gap-6">
           <div className="flex items-start gap-4 relative">
@@ -118,20 +118,21 @@ const HeroSection = () => {
                 Special Offer!
               </span>
             </div>
+            <Link to="/cake">
+              <div className="mt-6 flex flex-wrap gap-3 justify-center md:justify-start">
+                <a className="bg-white text-[#E53935] font-bold px-7 py-3 rounded-full hover:bg-[#FFF8F0] transition-colors shadow-lg text-sm">
+                  Order Now
+                </a>
 
-            <div className="mt-6 flex flex-wrap gap-3 justify-center md:justify-start">
-              <a className="bg-white text-[#E53935] font-bold px-7 py-3 rounded-full hover:bg-[#FFF8F0] transition-colors shadow-lg text-sm">
-                Order Now
-              </a>
-
-              <a className="border-2 border-white/40 text-white font-medium px-7 py-3 rounded-full hover:bg-white/10 transition-colors text-sm">
-                Explore Menu
-              </a>
-            </div>
+                <a className="border-2 border-white/40 text-white font-medium px-7 py-3 rounded-full hover:bg-white/10 transition-colors text-sm">
+                  Explore Menu
+                </a>
+              </div>
+            </Link>
           </div>
 
           <div className="hidden md:flex flex-col gap-4 shrink-0">
-            <div className="w-16 h-16 rounded-2xl bg-white/10 overflow-hidden border-3 border-white/20 shadow-xl">
+            <div className="w-28 h-28 rounded-2xl bg-white/10 overflow-hidden border-3 border-white/20 shadow-xl">
               <img
                 src={macaron}
                 alt="Macaron"

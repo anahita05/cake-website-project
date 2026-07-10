@@ -35,7 +35,8 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
   if (!visible) return null;
 
-  if (typeof window !== "undefined" && window.innerWidth >= 768) return null;
+  if (typeof window !== "undefined" && window.innerWidth >= 1024) 
+    return null;
 
 
   return (

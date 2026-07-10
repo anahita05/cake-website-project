@@ -3,6 +3,10 @@ import type { RouteObject } from "react-router";
 import RootLayout from "../layouts/RootLayout";
 import Home from "../pages/HomePage";
 import ProductDetail from "../pages/ProductDetail";
+import CartPage from "../pages/CartPage";
+import ComingSoon from "../pages/ComingSoon";
+import SignupPage from "../pages/SignupPage";
+import LoginPage from "../pages/LoginPage";
 
 const routes: RouteObject[] = [
   {
@@ -12,13 +16,17 @@ const routes: RouteObject[] = [
       { index: true, element: <Home /> },
       { path: "home", element: <Home /> },
       { path: "product/:id", element: <ProductDetail /> },
-      // { path: "profile/:username", element: <Profile /> },
+      { path: "cart", element: <CartPage /> },
+      { path: "cakes", element: <ComingSoon /> },
+      { path: "theme-cakes", element: <ComingSoon /> },
+      { path: "desserts", element: <ComingSoon /> },
+
+
+      { path: "*", element: <ComingSoon /> },
+      { path: "/signup", element: <SignupPage /> },
+      { path: "/login", element: <LoginPage /> },
     ],
   },
-
-  // { path: "/login", element: <LoginPage /> },
-  // { path: "/register", element: <RegisterPage /> },
-  // { path: "*", element: <NotFoundPage /> },
 ];
 
 const router = createBrowserRouter(routes);
