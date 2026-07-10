@@ -1,14 +1,15 @@
 import { useEffect } from "react";
 import { IoClose } from "react-icons/io5";
 import { FiUser } from "react-icons/fi";
+import { Link, useNavigate } from "react-router-dom";
 
 const navLinks = [
-  "Cakes",
-  "Theme Cakes",
-  "Desserts",
-  "Birthday",
-  "Anniversary",
-  "Occasions",
+  { label: "Cakes", path: "/cakes" },
+  { label: "Theme Cakes", path: "/theme-cakes" },
+  { label: "Desserts", path: "/desserts" },
+  { label: "Birthday", path: "/birthday" },
+  { label: "Anniversary", path: "/anniversary" },
+  { label: "Occasions", path: "/occasions" },
 ];
 
 interface MobileMenuProps {
@@ -32,6 +33,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     return () => document.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
+  const navigate = useNavigate();
+
   return (
     <>
       {/* backdrop */}
@@ -50,11 +53,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         }`}
         style={{ background: "#fdf6ee" }}
       >
-
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-red-100">
-          <span
-            className="text-xl font-black text-red-700 tracking-tight font-serif"
-          >
+          <span className="text-xl font-black text-red-700 tracking-tight font-serif">
             CAKE SHOP
           </span>
           <button
@@ -69,23 +69,28 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         {/* Nav links */}
         <nav className="flex flex-col mt-4 px-4 gap-0.5 flex-1 overflow-y-auto">
           {navLinks.map((item) => (
-            <a
-              key={item}
+            <Link
+              key={item.path}
+              to={item.path}
               onClick={onClose}
               className="footer-link px-4 py-3.5 text-base font-medium text-gray-700 hover:text-red-700 active:text-red-700 rounded-xl hover:bg-[#F5E6E6] active:bg-[#F5E6E6] transition-colors relative"
             >
-              {item}
-            </a>
+              {item.label}
+            </Link>
           ))}
         </nav>
 
-
         <div className="px-6 pb-8 pt-4 flex flex-col gap-3">
-          <button className="flex items-center justify-center gap-2 w-full py-3 rounded-full border border-red-300 text-gray-700 font-medium text-sm hover:bg-[#F5E6E6] transition-colors">
-            <FiUser className="w-4 h-4 text-red-700" />
-            Login / Signup
-          </button>
-          <a className="flex items-center justify-center w-full py-3 rounded-full bg-[#B83232] hover:bg-red-900 text-white font-bold text-sm shadow-md transition-colors cursor-pointer">
+          <Link to="/login">
+            <button className="flex items-center justify-center gap-2 w-full py-3 rounded-full border border-red-300 text-gray-700 font-medium text-sm hover:bg-[#F5E6E6] transition-colors">
+              <FiUser className="w-4 h-4 text-red-700" />
+              Login / Signup
+            </button>
+          </Link>
+          <a
+            className="flex items-center justify-center w-full py-3 rounded-full bg-[#B83232] hover:bg-red-900 text-white font-bold text-sm shadow-md transition-colors cursor-pointer"
+            onClick={() => navigate("/cart")}
+          >
             ORDER NOW
           </a>
         </div>
