@@ -1,4 +1,4 @@
-import { useParams } from "react-router";
+import { useParams } from "react-router-dom";
 import { products } from "../types/ProductTypes";
 import ProductHero from "../components/cards/ProductHero";
 import ProductAbout from "../components/cards/ProductAbout";
@@ -11,12 +11,11 @@ const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const product = products.find((p) => p.id === Number(id));
   if (!product) {
-  return <div>Product not found !</div>;
-}
+    return <div>Product not found !</div>;
+  }
 
   return (
     <div className="min-h-screen bg-[#FFF8F0] overflow-x-hidden relative">
-
       <BackButton />
 
       <ProductHero product={product} />

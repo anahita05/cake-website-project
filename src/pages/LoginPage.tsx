@@ -1,15 +1,13 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { LuCake, LuMail } from "react-icons/lu";
 import AuthCard from "../components/login-register/AuthCard";
 import InputField from "../components/login-register/InputField";
 import { loginSchema, type LoginSchema } from "../hooks/useAuthValidation";
 
-const CakeIcon = () => 
-  <LuCake 
-    className="w-7 h-7 text-white"/>;
+const CakeIcon = () => <LuCake className="w-7 h-7 text-white" />;
 
 const panelProps = {
   icon: <CakeIcon />,
@@ -29,9 +27,7 @@ const panelProps = {
   ],
 };
 
-const MailIcon = () => (
-  <LuMail />
-);
+const MailIcon = () => <LuMail />;
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();

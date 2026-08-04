@@ -12,12 +12,12 @@ CakeShop is a frontend web application designed to showcase and sell handcrafted
 
 ## 🚀 Tech Stack
 
-| Technology | Purpose |
-|---|---|
-| [React](https://react.dev/) | UI component library |
-| [Tailwind CSS](https://tailwindcss.com/) | Utility-first styling |
-| [React Router](https://reactrouter.com/) | Client-side routing |
-| [Vite](https://vitejs.dev/) | Fast dev server & build tool |
+| Technology                               | Purpose                      |
+| ---------------------------------------- | ---------------------------- |
+| [React](https://react.dev/)              | UI component library         |
+| [Tailwind CSS](https://tailwindcss.com/) | Utility-first styling        |
+| [React Router](https://reactrouter.com/) | Client-side routing          |
+| [Vite](https://vitejs.dev/)              | Fast dev server & build tool |
 
 ---
 
@@ -58,7 +58,7 @@ cakeshop/
 Make sure you have the following installed:
 
 - [Node.js](https://nodejs.org/) v18+
-- npm
+- pnpm
 
 ### Installation
 
@@ -67,10 +67,10 @@ Make sure you have the following installed:
 git clone https://github.com/anahita05/cake-website-project.git
 
 # 2. Install dependencies
-npm install
+pnpm install
 
 # 3. Start the development server
-npm run dev
+pnpm run dev
 ```
 
 The app will be running at `http://localhost:5173`.
@@ -78,7 +78,7 @@ The app will be running at `http://localhost:5173`.
 ### Build for Production
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 The optimized output will be in the `dist/` folder.

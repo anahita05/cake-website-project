@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import AuthCard from "../components/login-register/AuthCard";
 import InputField from "../components/login-register/InputField";
-import PasswordStrength from "../components/login-register/PasswordStrength"
+import PasswordStrength from "../components/login-register/PasswordStrength";
 import { signupSchema, type SignupSchema } from "../hooks/useAuthValidation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { GiBeveledStar } from "react-icons/gi";
 import { FiUser } from "react-icons/fi";
 import { LuMail } from "react-icons/lu";
@@ -168,8 +168,7 @@ const SignupPage: React.FC = () => {
               role="alert"
               className="text-xs text-red-500 flex items-center gap-1 ml-5"
             >
-            <MdErrorOutline 
-              className="w-4 h-4"/>
+              <MdErrorOutline className="w-4 h-4" />
               {errors.agreeToTerms.message}
             </p>
           )}

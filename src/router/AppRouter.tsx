@@ -1,5 +1,5 @@
-import { createBrowserRouter } from "react-router";
-import type { RouteObject } from "react-router";
+import { createBrowserRouter } from "react-router-dom";
+import type { RouteObject } from "react-router-dom";
 import RootLayout from "../layouts/RootLayout";
 import Home from "../pages/HomePage";
 import ProductDetail from "../pages/ProductDetail";
@@ -20,7 +20,6 @@ const routes: RouteObject[] = [
       { path: "cakes", element: <ComingSoon /> },
       { path: "theme-cakes", element: <ComingSoon /> },
       { path: "desserts", element: <ComingSoon /> },
-
 
       { path: "*", element: <ComingSoon /> },
       { path: "/signup", element: <SignupPage /> },

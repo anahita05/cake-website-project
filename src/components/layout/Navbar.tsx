@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { IoSearch } from "react-icons/io5";
 import { FiMenu, FiUser } from "react-icons/fi";
 import { IoBagHandleOutline } from "react-icons/io5";
