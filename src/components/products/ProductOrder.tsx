@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { FaShoppingCart, FaCheck } from "react-icons/fa";
-import type { ProductTypes } from "../../types/ProductTypes";
 import { useCartStore } from "../../store/cartStore";
+import type { Product } from "../../types/product";
 
 interface ProductOrderProps {
-  product: ProductTypes;
+  product: Product;
+
 }
 
 const SIGNED_DURATION_MS = 2200;

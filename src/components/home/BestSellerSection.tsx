@@ -1,12 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import ProductCard from "./ProductCard";
-import { products } from "../../types/ProductTypes";
+import ProductCard from "../products/ui/ProductCard";
 import { IoIosArrowDropleft, IoIosArrowDropright } from "react-icons/io";
 import { Link } from "react-router-dom";
+import type { Product } from "../../types/product";
 
 const GAP = 16;
 
-const BestSellerSection = () => {
+interface BestSellerSectionProps {
+    products: Product[];
+};
+
+const BestSellerSection = ({products}: BestSellerSectionProps) => {
   const [liked, setLiked] = useState<Record<number, boolean>>({});
   const [offset, setOffset] = useState(0);
   const [cardWidth, setCardWidth] = useState(0);

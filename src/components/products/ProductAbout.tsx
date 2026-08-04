@@ -1,31 +1,11 @@
-import type { ProductTypes } from "../../types/ProductTypes";
+import type { Product } from "../../types/product";
+
 
 interface ProductAboutProps {
-  product: ProductTypes;
+  product: Product;
 }
 
-const HIGHLIGHTS = [
-  {
-    title: "100% Natural",
-    subtitle: "Real ingredients, no shortcuts",
-    rotate: "-rotate-1",
-  },
-  {
-    title: "Handmade Daily",
-    subtitle: "Fresh from our kitchen",
-    rotate: "rotate-1",
-  },
-] as const;
-
 const ProductAbout = ({ product }: ProductAboutProps) => {
-  const highlights = [
-    ...HIGHLIGHTS,
-    {
-      title: "Loved by Many",
-      subtitle: `${product.reviews}+ happy customers`,
-      rotate: "-rotate-1" as const,
-    },
-  ];
 
   return (
     <section className="relative py-24 overflow-hidden">
@@ -48,10 +28,10 @@ const ProductAbout = ({ product }: ProductAboutProps) => {
         </p>
 
         <div className="grid md:grid-cols-3 gap-6">
-          {highlights.map(({ title, subtitle, rotate }) => (
+          {product.highlights.map(({ title, subtitle }, index) => (
             <div
               key={title}
-              className={`bg-[#FFF0E8] rounded-3xl p-6 text-center hover:-translate-y-2 transition-transform duration-300 ${rotate}`}
+              className={`bg-[#FFF0E8] rounded-3xl p-6 text-center hover:-translate-y-2 transition-transform duration-300 ${index % 2 === 0 ? "rotate-1" : "-rotate-1"}`}
             >
               <p className="font-serif font-bold text-[#B83232] text-lg">{title}</p>
               <p className="text-gray-500 text-sm mt-1">{subtitle}</p>

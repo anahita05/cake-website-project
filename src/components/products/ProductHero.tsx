@@ -1,8 +1,8 @@
 import { FaMapMarkerAlt, FaPhoneAlt, FaStar } from "react-icons/fa";
-import type { ProductTypes } from "../../types/ProductTypes";
+import type { Product } from "../../types/product";
 
 interface ProductHeroProps {
-  product: ProductTypes;
+  product: Product;
 }
 
 const CONTACT_INFO = {
@@ -60,7 +60,7 @@ const ProductHero = ({ product }: ProductHeroProps) => {
                   <FaStar />
               </div>
               <span className="text-gray-500 text-sm">
-                ({product.reviews} + reviews)
+                ({product.reviews.count} + reviews)
               </span>
             </div>
           </div>

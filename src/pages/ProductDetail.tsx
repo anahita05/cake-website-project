@@ -1,18 +1,19 @@
 import { useParams } from "react-router-dom";
-import { products } from "../types/ProductTypes";
-import ProductHero from "../components/cards/ProductHero";
-import ProductAbout from "../components/cards/ProductAbout";
-import ProductGallery from "../components/cards/ProductGallery";
-import ProductOrder from "../components/cards/ProductOrder";
-import ProductReviews from "../components/cards/ProductReviews";
+import ProductHero from "../components/products/ProductHero";
+import ProductAbout from "../components/products/ProductAbout";
+import ProductGallery from "../components/products/ProductGallery";
+import ProductOrder from "../components/products/ProductOrder";
+import ProductReviews from "../components/products/ProductReviews";
 import BackButton from "../components/BackButton";
+import { getProduct } from "../service/product.service";
 
 const ProductDetail = () => {
-  const { id } = useParams<{ id: string }>();
-  const product = products.find((p) => p.id === Number(id));
-  if (!product) {
-    return <div>Product not found !</div>;
-  }
+
+const { slug } = useParams<{ slug: string }>();
+const product = getProduct(slug ?? "");
+if (!product) {
+  return <div>Product not found!</div>;
+}
 
   return (
     <div className="min-h-screen bg-[#FFF8F0] overflow-x-hidden relative">
@@ -22,7 +23,7 @@ const ProductDetail = () => {
       <ProductAbout product={product} />
       <ProductGallery product={product} />
       <ProductOrder product={product} />
-      <ProductReviews />
+      <ProductReviews product={product} />
     </div>
   );
 };

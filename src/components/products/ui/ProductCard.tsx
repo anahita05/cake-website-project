@@ -1,19 +1,10 @@
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { useCartStore } from "../../store/cartStore";
+import { useCartStore } from "../../../store/cartStore";
+import type { Product } from "../../../types/product";
 
 
-type Product = {
-  id: number;
-  name: string;
-  price: string;
-  oldPrice: string;
-  rating: string;
-  reviews: number;
-  image: string;
-};
-
-type ProductCardProps = {
+interface ProductCardProps {
   product: Product;
   liked: boolean;
   onToggleLike: () => void;
@@ -23,10 +14,9 @@ const ProductCard = ({ product, liked, onToggleLike }: ProductCardProps) => {
   const navigate = useNavigate();
   const addItem = useCartStore((s) => s.addItem);
 
-
   const goToDetail = () => {
-    navigate(`/product/${product.id}`);
-    };
+    navigate(`/products/${product.slug}`);
+  };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -77,7 +67,7 @@ const ProductCard = ({ product, liked, onToggleLike }: ProductCardProps) => {
 
         <div className="flex items-center gap-1 mt-1">
           <span className="text-yellow-600 text-xs">{product.rating}</span>
-          <span className="text-gray-400 text-xs">{product.reviews}</span>
+          <span className="text-gray-400 text-xs">{product.reviews.count} reviews</span>
         </div>
 
         <button
