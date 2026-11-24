@@ -10,4 +10,5 @@ urlpatterns = [
     path('refresh/', views.RefreshView.as_view(), name='refresh'),
     path('logout/', views.LogoutView.as_view(), name='logout'),
     path('me/', views.MeView.as_view(), name='me'),
+    path('google/', views.GoogleLoginView.as_view(), name='google_login'),
 ]

@@ -16,6 +16,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 
+def env_list(name: str, default: str = "") -> list[str]:
+    """Parse a comma-separated env var, trimming trailing slashes."""
+    return [
+        value.strip().rstrip("/")
+        for value in os.environ.get(name, default).split(",")
+        if value.strip()
+    ]
+
+
+def env_bool(name: str, default: bool) -> bool:
+    return os.environ.get(name, str(default)).lower() == "true"
+
+
 # =============================================================================
 # SECURITY
 # =============================================================================
@@ -42,6 +55,13 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get(
+    "GOOGLE_OAUTH_CLIENT_ID",
+    ""
+).strip()
+
+# Google verifies the email before we link it to an existing password account.
+ALLOW_GOOGLE_ACCOUNT_LINKING = env_bool("ALLOW_GOOGLE_ACCOUNT_LINKING", True)
 
 # =============================================================================
 # APPLICATIONS
@@ -59,6 +79,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'drf_spectacular',
+    'rest_framework_simplejwt.token_blacklist',
     # Local apps
     'accounts',
     'products',
@@ -74,6 +95,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',  # must be before CommonMiddleware
+    'accounts.middleware.ApiOriginCheckMiddleware',  # CSRF guard for cookie auth
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -170,6 +192,22 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        # Product/category endpoints are public, so a low anonymous rate would
+        # break normal storefront browsing. Keep it generous; per-endpoint
+        # scopes below handle brute-force protection.
+        'anon': '1000/hour',
+        'user': '1000/hour',
+        'login': '5/min',
+        'register': '10/hour',
+        'google': '10/min',
+        'refresh': '30/min',
+        'password_reset': '3/hour',
+    },
 }
 
 
@@ -177,22 +215,26 @@ REST_FRAMEWORK = {
 # SIMPLE JWT
 # =============================================================================
 
-# NOTE: token blacklist app is not installed, so rotation/blacklist must stay off.
-# If you add 'rest_framework_simplejwt.token_blacklist' to INSTALLED_APPS + migrate,
-# you may set ROTATE_REFRESH_TOKENS=True and BLACKLIST_AFTER_ROTATION=True.
+AUTH_COOKIE_SECURE = env_bool("COOKIE_SECURE", not DEBUG)
+AUTH_COOKIE_SAMESITE = os.environ.get("COOKIE_SAMESITE", "Lax" if DEBUG else "None")
+
+# Rotation/blacklist require the token_blacklist app (installed above).
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': False,
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
     'AUTH_COOKIE': 'access_token',
     'AUTH_COOKIE_REFRESH': 'refresh_token',
     # Secure/SameSite=None cookies are rejected over plain HTTP (local dev uses
     # http://localhost / http://127.0.0.1), so only require them in production.
-    'AUTH_COOKIE_SECURE': not DEBUG,
+    'AUTH_COOKIE_SECURE': AUTH_COOKIE_SECURE,
     'AUTH_COOKIE_HTTP_ONLY': True,
-    'AUTH_COOKIE_SAMESITE': 'None' if not DEBUG else 'Lax',
+    'AUTH_COOKIE_SAMESITE': AUTH_COOKIE_SAMESITE,
     'AUTH_COOKIE_PATH': '/',
+    # Only sent to refresh/logout, not every API request.
+    'AUTH_COOKIE_REFRESH_PATH': '/api/auth/',
 }
 
 
@@ -200,14 +242,32 @@ SIMPLE_JWT = {
 # CORS
 # =============================================================================
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',   # Vite dev server
-    'http://127.0.0.1:5173',   # Vite dev server via 127.0.0.1
-    'http://localhost:3000',   # in case you switch to CRA
-    'http://127.0.0.1:3000',
-]
+CORS_ALLOWED_ORIGINS = env_list(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:5173,http://127.0.0.1:5173,'
+    'http://localhost:3000,http://127.0.0.1:3000',
+)
+
+CSRF_TRUSTED_ORIGINS = env_list(
+    'CSRF_TRUSTED_ORIGINS',
+    ','.join(CORS_ALLOWED_ORIGINS),
+)
 
 CORS_ALLOW_CREDENTIALS = True  # required for cookies to be sent cross-origin
+
+
+# =============================================================================
+# CACHE (throttling; use Redis when running multiple workers)
+# =============================================================================
+
+REDIS_URL = os.environ.get('REDIS_URL', '').strip()
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+        }
+    }
 
 
 # =============================================================================

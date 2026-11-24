@@ -77,6 +77,10 @@ celerybeat.pid
 # **/migrations/*.py
 # !**/migrations/__init__.py
 
+# Local planning notes (not part of the app)
+Back/fix_plan.*
+Back/frontend_fixes.md
+
 # mypy
 .mypy_cache/
 
