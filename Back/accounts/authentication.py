@@ -23,11 +23,10 @@ class CustomJWTAuthentication(JWTAuthentication):
         # 2) Cookie flow (browser flow used by the frontend).
         access_token = request.COOKIES.get(settings.SIMPLE_JWT['AUTH_COOKIE'])
 
-        if access_token is None:
-            return None
-
+        # Missing or empty cookie means anonymous. After logout Django writes an
+        # empty cookie; raising here would break /login/ and /register/ too.
         if not access_token:
-            raise AuthenticationFailed('Access token cookie is empty.')
+            return None
 
         try:
             validated_token = self.get_validated_token(access_token)

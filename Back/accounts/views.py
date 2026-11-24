@@ -1,74 +1,108 @@
-import re
+import logging
 from typing import Any, cast
-from django.db import IntegrityError
-from rest_framework.views import APIView
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
-from django.contrib.auth import authenticate
+
 from django.conf import settings
+from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.models import update_last_login
+from django.db import IntegrityError
 from drf_spectacular.utils import extend_schema
 from google.auth.exceptions import TransportError
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import AuthenticationFailed, TokenError
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+
+from cart.services import cart_get_or_create
+from .serializers import (
+    GoogleLoginInputSerializer,
+    LoginInputSerializer,
+    MessageOutputSerializer,
+    UserOutputSerializer,
+    UserRegisterInputSerializer,
+)
 from .services import (
-    user_create,
-    GoogleEmailAlreadyRegistered, 
+    GoogleEmailAlreadyRegistered,
     InvalidGoogleCredentialError,
+    user_create,
     user_get_or_create_from_google,
     verify_google_credential,
 )
-from .serializers import (
-    LoginInputSerializer, 
-    UserRegisterInputSerializer, 
-    UserOutputSerializer, 
-    MessageOutputSerializer,
-    GoogleLoginInputSerializer,
+from .throttles import (
+    GoogleLoginRateThrottle,
+    LoginRateThrottle,
+    RefreshRateThrottle,
+    RegisterRateThrottle,
 )
-from cart.services import cart_get_or_create
+
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
 # Helpers
 # =============================================================================
 
-def set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> Response:
-    """Sets JWT access and refresh tokens as HttpOnly cookies on the response."""
+def set_auth_cookies(
+    response: Response,
+    access_token: str,
+    refresh_token: str | None = None,
+    *,
+    refresh_max_age: int | None = None,
+) -> Response:
+    """Set JWT tokens as HttpOnly cookies on the response.
+
+    ``refresh_max_age=None`` makes the refresh cookie a browser-session cookie.
+    """
+    jwt_cfg = settings.SIMPLE_JWT
+    common = {
+        'httponly': jwt_cfg['AUTH_COOKIE_HTTP_ONLY'],
+        'secure': jwt_cfg['AUTH_COOKIE_SECURE'],
+        'samesite': jwt_cfg['AUTH_COOKIE_SAMESITE'],
+    }
+
     response.set_cookie(
-        key=settings.SIMPLE_JWT['AUTH_COOKIE'],
+        key=jwt_cfg['AUTH_COOKIE'],
         value=access_token,
-        httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-        secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-        samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-        path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/'),
-        max_age=int(settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()),
+        path=jwt_cfg.get('AUTH_COOKIE_PATH', '/'),
+        max_age=int(jwt_cfg['ACCESS_TOKEN_LIFETIME'].total_seconds()),
+        **common,
     )
-    response.set_cookie(
-        key=settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'],
-        value=refresh_token,
-        httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-        secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-        samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-        path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/'),
-        max_age=int(settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()),
-    )
+
+    if refresh_token is not None:
+        response.set_cookie(
+            key=jwt_cfg['AUTH_COOKIE_REFRESH'],
+            value=refresh_token,
+            path=jwt_cfg.get('AUTH_COOKIE_REFRESH_PATH', '/api/auth/'),
+            max_age=refresh_max_age,
+            **common,
+        )
     return response
 
 
 def clear_auth_cookies(response: Response) -> Response:
-    """Delete auth cookies using the same path/samesite/secure attributes."""
-    response.delete_cookie(
-        settings.SIMPLE_JWT['AUTH_COOKIE'],
-        path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/'),
-        samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-    )
-    response.delete_cookie(
-        settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'],
-        path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/'),
-        samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-    )
+    """Delete auth cookies using the same paths used when setting them."""
+    jwt_cfg = settings.SIMPLE_JWT
+    for key, path in (
+        (jwt_cfg['AUTH_COOKIE'], jwt_cfg.get('AUTH_COOKIE_PATH', '/')),
+        (
+            jwt_cfg['AUTH_COOKIE_REFRESH'],
+            jwt_cfg.get('AUTH_COOKIE_REFRESH_PATH', '/api/auth/'),
+        ),
+    ):
+        # Django 6.1 delete_cookie() has no `secure` parameter.
+        response.delete_cookie(
+            key,
+            path=path,
+            samesite=jwt_cfg['AUTH_COOKIE_SAMESITE'],
+        )
     return response
+
+
+def _refresh_max_age() -> int:
+    return int(settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds())
 
 
 # =============================================================================
@@ -77,6 +111,7 @@ def clear_auth_cookies(response: Response) -> Response:
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [RegisterRateThrottle]
 
     @extend_schema(
         summary="Register new user",
@@ -98,9 +133,6 @@ class RegisterView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Ensure a cart exists (user_create already does get_or_create).
-        cart_get_or_create(user=user)
-        
         return Response(
             UserOutputSerializer(user).data,
             status=status.HTTP_201_CREATED
@@ -109,6 +141,7 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [LoginRateThrottle]
 
     @extend_schema(
         summary="User Login",
@@ -132,23 +165,26 @@ class LoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        # Create or get cart for the user
         cart_get_or_create(user=user)
+        update_last_login(None, user)
 
         refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-        refresh_token = str(refresh)
-
         response = Response(
             UserOutputSerializer(user).data,
             status=status.HTTP_200_OK
         )
-        response = set_auth_cookies(response, access_token, refresh_token)
-        return response
+        return set_auth_cookies(
+            response,
+            str(refresh.access_token),
+            str(refresh),
+            refresh_max_age=_refresh_max_age(),
+        )
+
 
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
-    
+    throttle_classes = [GoogleLoginRateThrottle]
+
     @extend_schema(
         summary="Sign in or sign up with Google",
         description="Verifies a Google ID token and sets JWT cookies",
@@ -160,7 +196,7 @@ class GoogleLoginView(APIView):
         serializer = GoogleLoginInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         credential = serializer.validated_data["credential"]
-        
+
         try:
             claims = verify_google_credential(credential)
         except InvalidGoogleCredentialError:
@@ -170,18 +206,18 @@ class GoogleLoginView(APIView):
             )
         except TransportError:
             return Response(
-                {"error": "Google Verification is temporary Unavailable"},
+                {"error": "Google verification is temporarily unavailable"},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
-            
+
         display_name = claims.get("name", "")
         if not isinstance(display_name, str):
             display_name = ""
-        
-        try: 
+
+        try:
             user = user_get_or_create_from_google(
                 google_id=claims["sub"],
-                email = claims["email"],
+                email=claims["email"],
                 username=display_name,
             )
         except GoogleEmailAlreadyRegistered:
@@ -189,7 +225,7 @@ class GoogleLoginView(APIView):
                 {
                     "error": (
                         "An account with this email is already registered. "
-                        "Please sign in instead."
+                        "Please sign in with your password instead."
                     )
                 },
                 status=status.HTTP_409_CONFLICT,
@@ -199,7 +235,9 @@ class GoogleLoginView(APIView):
                 {"error": "Could not create the account due to a data conflict."},
                 status=status.HTTP_409_CONFLICT,
             )
-        
+
+        update_last_login(None, user)
+
         refresh = RefreshToken.for_user(user)
         response = Response(
             UserOutputSerializer(user).data,
@@ -209,18 +247,20 @@ class GoogleLoginView(APIView):
             response,
             str(refresh.access_token),
             str(refresh),
+            refresh_max_age=_refresh_max_age(),
         )
+
 
 class RefreshView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [RefreshRateThrottle]
     serializer_class = UserOutputSerializer
 
     @extend_schema(
         summary="Refresh access token",
         description=(
-            "Reads the HttpOnly refresh_token cookie and issues a new access "
-            "token cookie. Without this, users are logged out when the "
-            "30-minute access token expires."
+            "Reads the HttpOnly refresh_token cookie, rotates it, and issues "
+            "new access/refresh cookies."
         ),
         tags=["Authentication"],
         request=None,
@@ -233,21 +273,35 @@ class RefreshView(APIView):
                 {'error': 'Refresh token cookie is missing.'},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+
         try:
-            refresh = RefreshToken(refresh_token)
-            access_token = str(refresh.access_token)
-            user = refresh.user if hasattr(refresh, 'user') else None
-            if user is None:
-                from django.contrib.auth import get_user_model
-                user = get_user_model().objects.get(id=refresh['user_id'])
-        except (InvalidToken, TokenError):
+            serializer = TokenRefreshSerializer(data={'refresh': refresh_token})
+            serializer.is_valid(raise_exception=True)
+        except TokenError:
             return Response(
                 {'error': 'Invalid or expired refresh token.'},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+        except AuthenticationFailed as exc:
+            return Response(
+                {'error': str(exc.detail)},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
         except Exception:
+            # Programming/DB errors must not masquerade as auth failures.
+            logger.exception("Refresh failed unexpectedly")
             return Response(
                 {'error': 'Could not refresh session.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        data = serializer.validated_data
+        claim = settings.SIMPLE_JWT.get('USER_ID_CLAIM', 'user_id')
+        user_id = AccessToken(data['access']).payload.get(claim)
+        user = get_user_model().objects.filter(pk=user_id, is_active=True).first()
+        if user is None:
+            return Response(
+                {'error': 'Account is no longer active.'},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -255,23 +309,37 @@ class RefreshView(APIView):
             UserOutputSerializer(user).data,
             status=status.HTTP_200_OK,
         )
-        # Re-issue access cookie; keep the same refresh cookie lifetime.
-        # Rotation is disabled (no blacklist app), so reuse the refresh token.
-        return set_auth_cookies(response, access_token, refresh_token)
+        return set_auth_cookies(
+            response,
+            data['access'],
+            data.get('refresh'),
+            refresh_max_age=_refresh_max_age(),
+        )
 
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     serializer_class = MessageOutputSerializer
 
     @extend_schema(
         summary="User Logout",
-        description="Logout the current user by clearing JWT cookies.",
+        description=(
+            "Revokes the refresh token when present and clears the JWT cookies. "
+            "Works even when the access token has already expired."
+        ),
         tags=["Authentication"],
         request=None,
         responses={200: MessageOutputSerializer},
     )
     def post(self, request: Request) -> Response:
+        refresh_token = request.COOKIES.get(settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'])
+        if refresh_token:
+            try:
+                RefreshToken(refresh_token).blacklist()
+            except TokenError:
+                # Already expired/invalid: still clear the cookies.
+                pass
+
         response = Response(
             {'message': 'Logged out successfully'},
             status=status.HTTP_200_OK
