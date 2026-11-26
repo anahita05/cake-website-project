@@ -11,4 +11,15 @@ urlpatterns = [
     path('logout/', views.LogoutView.as_view(), name='logout'),
     path('me/', views.MeView.as_view(), name='me'),
     path('google/', views.GoogleLoginView.as_view(), name='google_login'),
+    path('set-password/', views.SetPasswordView.as_view(), name='set_password'),
+    path(
+        'password-reset/',
+        views.PasswordResetRequestView.as_view(),
+        name='password_reset',
+    ),
+    path(
+        'password-reset/confirm/',
+        views.PasswordResetConfirmView.as_view(),
+        name='password_reset_confirm',
+    ),
 ]
