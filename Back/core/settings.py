@@ -207,6 +207,7 @@ REST_FRAMEWORK = {
         'google': '10/min',
         'refresh': '30/min',
         'password_reset': '3/hour',
+        'sensitive': '10/hour',
     },
 }
 
@@ -236,6 +237,24 @@ SIMPLE_JWT = {
     # Only sent to refresh/logout, not every API request.
     'AUTH_COOKIE_REFRESH_PATH': '/api/auth/',
 }
+
+
+# =============================================================================
+# EMAIL & FRONTEND LINKS
+# =============================================================================
+
+# Used to build the password-reset link that is emailed to the user.
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173").rstrip("/")
+
+# Console backend prints emails to the terminal. Swap this for SMTP in prod.
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend",
+)
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@cakeshop.local")
+
+# Password-reset links expire after one hour (Django's default is 3 days).
+PASSWORD_RESET_TIMEOUT = int(os.environ.get("PASSWORD_RESET_TIMEOUT", 3600))
 
 
 # =============================================================================
