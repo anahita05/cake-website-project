@@ -1,8 +1,12 @@
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.core import mail
 from django.core.cache import cache
 from django.test import override_settings
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from google.auth.exceptions import TransportError
 from rest_framework.test import APITestCase
 
@@ -16,6 +20,9 @@ REFRESH = "/api/auth/refresh/"
 LOGOUT = "/api/auth/logout/"
 ME = "/api/auth/me/"
 GOOGLE = "/api/auth/google/"
+SET_PASSWORD = "/api/auth/set-password/"
+PASSWORD_RESET = "/api/auth/password-reset/"
+PASSWORD_RESET_CONFIRM = "/api/auth/password-reset/confirm/"
 
 PASSWORD = "Str0ng-Passw0rd!"
 TRUSTED_ORIGIN = "http://localhost:5173"
@@ -297,3 +304,269 @@ class GoogleCredentialVerificationTests(APITestCase):
         ):
             with self.assertRaises(InvalidGoogleCredentialError):
                 services.verify_google_credential("token")
+
+
+# =============================================================================
+# Phase 2 — remember me, set password, password reset, profile
+# =============================================================================
+
+@override_settings(
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}},
+    CORS_ALLOWED_ORIGINS=[TRUSTED_ORIGIN],
+    CSRF_TRUSTED_ORIGINS=[TRUSTED_ORIGIN],
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    FRONTEND_URL="http://localhost:5173",
+)
+class Phase2AuthTests(APITestCase):
+    def setUp(self):
+        cache.clear()
+        mail.outbox.clear()
+
+    def make_user(self, email="user@example.com", username="User", **overrides):
+        data = {"password": PASSWORD, **overrides}
+        return User.objects.create_user(username=username, email=email, **data)
+
+    def login(self, email="user@example.com", password=PASSWORD, remember=None):
+        payload = {"email": email, "password": password}
+        if remember is not None:
+            payload["remember"] = remember
+        return self.client.post(LOGIN, payload, format="json")
+
+    def reset_payload(self, user, password="N3w-Str0ng-Pass!"):
+        return {
+            "uid": urlsafe_base64_encode(force_bytes(user.pk)),
+            "token": default_token_generator.make_token(user),
+            "password": password,
+        }
+
+    # --- remember me -------------------------------------------------------
+    def test_login_without_remember_gives_session_cookie(self):
+        self.make_user()
+        res = self.login()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.cookies["refresh_token"]["max-age"], "")
+
+    def test_login_with_remember_gives_persistent_cookie(self):
+        self.make_user()
+        res = self.login(remember=True)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(
+            int(res.cookies["refresh_token"]["max-age"]),
+            7 * 24 * 3600,
+        )
+
+    def test_refresh_keeps_session_cookie(self):
+        self.make_user()
+        self.login()
+        res = self.client.post(REFRESH)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.cookies["refresh_token"]["max-age"], "")
+
+    def test_refresh_keeps_persistent_cookie(self):
+        self.make_user()
+        self.login(remember=True)
+        res = self.client.post(REFRESH)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(
+            int(res.cookies["refresh_token"]["max-age"]),
+            7 * 24 * 3600,
+        )
+
+    # --- set password ------------------------------------------------------
+    def test_set_password_requires_auth(self):
+        res = self.client.post(
+            SET_PASSWORD, {"new_password": "N3w-Str0ng-Pass!"}, format="json"
+        )
+        self.assertEqual(res.status_code, 401)
+
+    def test_google_user_can_set_first_password(self):
+        user = self.make_user(
+            email="g@example.com", username="GUser", password=None, google_id="g-1"
+        )
+        self.client.force_authenticate(user=user)
+
+        res = self.client.post(
+            SET_PASSWORD,
+            {"new_password": "N3w-Str0ng-Pass!"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+
+        user.refresh_from_db()
+        self.assertTrue(user.has_usable_password())
+        self.assertTrue(user.check_password("N3w-Str0ng-Pass!"))
+
+        self.client.force_authenticate(user=None)
+        self.assertEqual(self.login(email="g@example.com", password="N3w-Str0ng-Pass!").status_code, 200)
+
+    def test_set_password_needs_correct_current_password(self):
+        user = self.make_user()
+        self.client.force_authenticate(user=user)
+
+        res = self.client.post(
+            SET_PASSWORD,
+            {"new_password": "N3w-Str0ng-Pass!", "current_password": "wrong"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("current_password", res.data)
+
+        user.refresh_from_db()
+        self.assertTrue(user.check_password(PASSWORD))
+
+    def test_set_password_rejects_weak_password(self):
+        self.make_user()
+        self.client.force_authenticate(user=User.objects.get(email="user@example.com"))
+
+        res = self.client.post(
+            SET_PASSWORD,
+            {"new_password": "12345678", "current_password": PASSWORD},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("new_password", res.data)
+
+    def test_set_password_revokes_old_sessions(self):
+        self.make_user()
+        self.login()
+        old_refresh = self.client.cookies["refresh_token"].value
+
+        self.client.force_authenticate(user=User.objects.get(email="user@example.com"))
+        res = self.client.post(
+            SET_PASSWORD,
+            {"new_password": "N3w-Str0ng-Pass!", "current_password": PASSWORD},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+
+        self.client.force_authenticate(user=None)
+        self.client.cookies["refresh_token"] = old_refresh
+        self.assertEqual(self.client.post(REFRESH).status_code, 401)
+
+    # --- password reset ----------------------------------------------------
+    def test_reset_request_is_generic_for_unknown_email(self):
+        res = self.client.post(
+            PASSWORD_RESET, {"email": "nobody@example.com"}, format="json"
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertIn("If that email exists", res.data["message"])
+
+    def test_reset_request_emails_a_link(self):
+        self.make_user()
+        res = self.client.post(
+            PASSWORD_RESET, {"email": " USER@Example.com "}, format="json"
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("/reset-password?uid=", mail.outbox[0].body)
+
+    def test_reset_confirm_sets_new_password(self):
+        user = self.make_user()
+        res = self.client.post(
+            PASSWORD_RESET_CONFIRM, self.reset_payload(user), format="json"
+        )
+        self.assertEqual(res.status_code, 200)
+
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("N3w-Str0ng-Pass!"))
+
+    def test_reset_confirm_rejects_bad_token(self):
+        user = self.make_user()
+        payload = self.reset_payload(user)
+        payload["token"] = "definitely-not-valid"
+        res = self.client.post(PASSWORD_RESET_CONFIRM, payload, format="json")
+        self.assertEqual(res.status_code, 400)
+
+    def test_reset_confirm_rejects_bad_uid(self):
+        res = self.client.post(
+            PASSWORD_RESET_CONFIRM,
+            {"uid": "not-a-uuid", "token": "x", "password": "N3w-Str0ng-Pass!"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_reset_link_cannot_be_reused(self):
+        user = self.make_user()
+        payload = self.reset_payload(user)
+        self.assertEqual(
+            self.client.post(PASSWORD_RESET_CONFIRM, payload, format="json").status_code,
+            200,
+        )
+        self.assertEqual(
+            self.client.post(PASSWORD_RESET_CONFIRM, payload, format="json").status_code,
+            400,
+        )
+
+    def test_reset_revokes_existing_sessions(self):
+        self.make_user()
+        self.login()
+        old_refresh = self.client.cookies["refresh_token"].value
+
+        payload = self.reset_payload(User.objects.get(email="user@example.com"))
+        self.assertEqual(
+            self.client.post(PASSWORD_RESET_CONFIRM, payload, format="json").status_code,
+            200,
+        )
+
+        self.client.cookies["refresh_token"] = old_refresh
+        self.assertEqual(self.client.post(REFRESH).status_code, 401)
+
+    # --- profile -----------------------------------------------------------
+    def test_patch_me_updates_profile(self):
+        user = self.make_user()
+        self.client.force_authenticate(user=user)
+
+        res = self.client.patch(
+            ME,
+            {
+                "first_name": "Sara",
+                "last_name": "Ahmadi",
+                "phone_number": "+1 555 0100",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["first_name"], "Sara")
+
+        user.refresh_from_db()
+        self.assertEqual(user.first_name, "Sara")
+        self.assertEqual(user.phone_number, "+1 555 0100")
+
+    def test_patch_me_blank_phone_clears_it(self):
+        user = self.make_user(phone_number="+15550100")
+        self.client.force_authenticate(user=user)
+
+        res = self.client.patch(ME, {"phone_number": "   "}, format="json")
+        self.assertEqual(res.status_code, 200)
+
+        user.refresh_from_db()
+        self.assertIsNone(user.phone_number)
+
+    def test_patch_me_rejects_taken_phone(self):
+        self.make_user(email="a@example.com", username="A", phone_number="+15550100")
+        user = self.make_user(email="b@example.com", username="B")
+        self.client.force_authenticate(user=user)
+
+        res = self.client.patch(ME, {"phone_number": "+15550100"}, format="json")
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("phone_number", res.data)
+
+    def test_patch_me_cannot_change_email_or_username(self):
+        user = self.make_user()
+        self.client.force_authenticate(user=user)
+
+        res = self.client.patch(
+            ME,
+            {"email": "hacker@example.com", "username": "hacked"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+
+        user.refresh_from_db()
+        self.assertEqual(user.email, "user@example.com")
+        self.assertEqual(user.username, "User")
+
+    def test_patch_me_requires_auth(self):
+        res = self.client.patch(ME, {"first_name": "X"}, format="json")
+        self.assertEqual(res.status_code, 401)
